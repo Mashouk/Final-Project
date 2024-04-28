@@ -37,8 +37,9 @@
       "esri/layers/FeatureLayer",
       "esri/widgets/Legend",
       "esri/widgets/ScaleBar",
-      "esri/widgets/Search"
-    ], function (esriConfig, Map, MapView, FeatureLayer, Legend, ScaleBar, Search) {
+      "esri/widgets/Search",
+      "esri/core/urlUtils"
+    ], function (esriConfig, Map, MapView, FeatureLayer, Legend, ScaleBar, Search, urlUtils) {
       esriConfig.apiKey = "AAPK9c576cbd3a844e7791c0d5901d6d1b876W9Kwr0mfce5WFBsw3WmfabQ1sD8IBrqASyYAbSi22UUfDN4txoxY5y-bIM1jVhR";
 
       const map = new Map({
@@ -47,7 +48,7 @@
 
       const view = new MapView({
         map: map,
-        center: [-120.4824, 37.3022], // Coordinates for Gainesville, Florida
+        center: [-120.5, 37.0], // Coordinates for Gainesville, Florida
         zoom: 10,
         container: "viewDiv"
       });
@@ -114,9 +115,17 @@
                             label: "POINT_Y"
                         }
                     ]
+                },
+                {
+                    type: "text",
+                    text: "<a href='#' id='downloadLink'>Download Data</a>"
                 }
             ]
-        }
+        },
+        // Enable editing
+        editingEnabled: true,
+        // Allow updates only (no adding or deleting features)
+        editingAllowed: "update"
       });
 
       map.add(featureLayer);
@@ -124,7 +133,7 @@
       // Add Legend widget
       const legend = new Legend({
         view: view,
-        title: "Gainesville Training Data" // Custom legend title
+        title: "Subsidence Training Data" // Custom legend title
       });
 
       view.ui.add(legend, "bottom-right");
@@ -155,6 +164,82 @@
         content += "</table>";
         return content;
       }
+
+      // Event listener for the download link
+      view.popup.on("trigger-action", function (event) {
+        if (event.action.id === "downloadData") {
+          const attributes = view.popup.selectedFeature.attributes;
+          const data = JSON.stringify(attributes);
+          const blob = new Blob([data], { type: "text/plain" });
+          const url = URL.createObjectURL(blob);
+
+          // Construct download link
+          const link = document.createElement("a");
+          link.setAttribute("href", url);
+          link.setAttribute("download", "subsidence_data.json");
+          link.click();
+
+          // Cleanup
+          URL.revokeObjectURL(url);
+        }
+      });
+
+      // Add custom action to the popup
+      view.popup.on("trigger-action", function(event) {
+        if (event.action.id === "downloadData") {
+          downloadData(view.popup.selectedFeature.attributes);
+        }
+      });
+
+      // Add custom action to the popup template for editing
+      featureLayer.popupTemplate.actions.push({
+        id: "editFeature",
+        title: "Edit Feature"
+      });
+
+      // Event listener for the edit action
+      view.popup.on("trigger-action", function (event) {
+        if (event.action.id === "editFeature") {
+          view.popup.visible = false; // Hide the popup
+          const selectedFeature = view.popup.selectedFeature;
+
+          // Create a form for editing attributes
+          const form = document.createElement("form");
+          form.style.padding = "10px";
+
+          // Add input fields for each attribute
+          for (const field of featureLayer.fields) {
+            const label = document.createElement("label");
+            label.textContent = field.alias;
+            const input = document.createElement("input");
+            input.type = "text";
+            input.value = selectedFeature.attributes[field.name];
+            input.addEventListener("change", function () {
+              selectedFeature.attributes[field.name] = this.value;
+            });
+            form.appendChild(label);
+            form.appendChild(input);
+            form.appendChild(document.createElement("br"));
+          }
+
+          // Add a button to submit the changes
+          const submitButton = document.createElement("button");
+          submitButton.textContent = "Save Changes";
+          submitButton.addEventListener("click", function () {
+            featureLayer.applyEdits({
+              updateFeatures: [selectedFeature]
+            }).then(function () {
+              view.popup.visible = true; // Show the popup again
+              view.popup.refresh(); // Refresh the popup content to reflect the changes
+            });
+          });
+
+          // Add the form and button to the popup content
+          view.popup.content = form;
+          view.popup.content.appendChild(submitButton);
+        }
+      });
+
     });
   </script>
 
