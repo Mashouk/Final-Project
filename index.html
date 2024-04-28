@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Display Shapefile Data with All Fields</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="" />
+
+  <!-- calls for the arcgis api's CSS file and JS library. -->
+  <link rel="stylesheet" href="https://js.arcgis.com/4.25/esri/themes/light/main.css">
+  <script src="https://js.arcgis.com/4.25/"></script>
+
+  <!-- css to make a full screen map -->
+  <style>
+    html,
+    body,
+    #viewDiv {
+      padding: 0;
+      margin: 0;
+      height: 100%; 
+      width: 100%;
+    }
+  </style>
+
+</head>
+<body>
+
+  <!-- the div to display the map  -->
+  <div id="viewDiv"></div>
+
+  <!-- JavaScript code -->
+  <script>
+    require([
+      "esri/config",
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/layers/FeatureLayer",
+      "esri/widgets/Legend",
+      "esri/widgets/ScaleBar",
+      "esri/widgets/Search"
+    ], function (esriConfig, Map, MapView, FeatureLayer, Legend, ScaleBar, Search) {
+      esriConfig.apiKey = "AAPK9c576cbd3a844e7791c0d5901d6d1b876W9Kwr0mfce5WFBsw3WmfabQ1sD8IBrqASyYAbSi22UUfDN4txoxY5y-bIM1jVhR";
+
+      const map = new Map({
+        basemap: "arcgis-topographic"
+      });
+
+      const view = new MapView({
+        map: map,
+        center: [-120.4824, 37.3022], // Coordinates for Gainesville, Florida
+        zoom: 10,
+        container: "viewDiv"
+      });
+
+      const featureLayer = new FeatureLayer({
+        url: "https://services.arcgis.com/LBbVDC0hKPAnLRpO/arcgis/rest/services/subsidence/FeatureServer",
+        outFields: ["*"], // Include all fields
+        popupTemplate: {
+            title: "Feature Attributes",
+            content: [
+                {
+                    type: "fields",
+                    fieldInfos: [
+                        {
+                            fieldName: "Id",
+                            label: "ID"
+                        },
+                        {
+                            fieldName: "Subsidence",
+                            label: "Subsidence"
+                        },
+                        {
+                            fieldName: "Dem_s",
+                            label: "Dem_s"
+                        },
+                        {
+                            fieldName: "Dis_t_riv_",
+                            label: "Dis_t_riv_"
+                        },
+                        {
+                            fieldName: "Dis_t_rd_s",
+                            label: "Dis_t_rd_s"
+                        },
+                        {
+                            fieldName: "NDVI_s",
+                            label: "NDVI_s"
+                        },
+                        {
+                            fieldName: "rainfall_s",
+                            label: "Rainfall_s"
+                        },
+                        {
+                            fieldName: "Slope_s",
+                            label: "Slope_s"
+                        },
+                        {
+                            fieldName: "Soil_Moist",
+                            label: "Soil_Moist"
+                        },
+                        {
+                            fieldName: "Soil_temp_",
+                            label: "Soil_temp_"
+                        },
+                        {
+                            fieldName: "TWI_s",
+                            label: "TWI_s"
+                        },
+                        {
+                            fieldName: "POINT_X",
+                            label: "POINT_X"
+                        },
+                        {
+                            fieldName: "POINT_Y",
+                            label: "POINT_Y"
+                        }
+                    ]
+                }
+            ]
+        }
+      });
+
+      map.add(featureLayer);
+
+      // Add Legend widget
+      const legend = new Legend({
+        view: view,
+        title: "Gainesville Training Data" // Custom legend title
+      });
+
+      view.ui.add(legend, "bottom-right");
+
+      // Add ScaleBar widget
+      const scaleBar = new ScaleBar({
+        view: view
+      });
+
+      view.ui.add(scaleBar, "bottom-left");
+
+      // Add Search widget
+      const searchWidget = new Search({
+        view: view
+      });
+
+      view.ui.add(searchWidget, {
+        position: "top-left",
+        index: 0
+      });
+
+      // Function to generate popup content dynamically
+      function generatePopupContent(feature) {
+        let content = "<table>";
+        for (const [key, value] of Object.entries(feature.attributes)) {
+          content += `<tr><td>${key}</td><td>${value}</td></tr>`;
+        }
+        content += "</table>";
+        return content;
+      }
+    });
+  </script>
+
+</body>
+</html>
